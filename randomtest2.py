@@ -10,7 +10,6 @@ from scipy.spatial.transform import Rotation as R
 import scipy.optimize
 import functools
 import datetime
-import math
 
 ts = load.timescale()
 t = ts.now()
@@ -21,14 +20,14 @@ today = datetime.datetime(2024, 1, 1, tzinfo=utc)
 
 for i in range(1,100):
     time.append(ts.from_datetime(today))
-    today += datetime.timedelta(days=1000)
+    today += datetime.timedelta(days=10)
 
 planets = load('de440.bsp')
 
 objects = ['sun', 'earth'
-           , 'moon', 'mercury', 'venus', 'mars'
-        #  , 'jupiter', 'saturn'
-           ,'uranus', 'neptune', 'pluto'
+           , 'moon', 'mercury', 'venus', 'mars',
+        #    'jupiter', 'saturn'
+        #    ,'uranus', 'neptune', 'pluto'
            ]
 
 new_data = []
@@ -69,39 +68,32 @@ fig = plt.figure()
 
 data = pd.DataFrame(new_data)
 
-X = np.array([[data['x'][8][0]]])
-Y = np.array([[data['y'][8][0]]])
+x = np.array(data['x'][1])
+y = np.array(data['y'][1])
 
-for i, a in enumerate(data['x'][1]):
-    if i == 0:
-        continue
-    X = np.append(X, [[data['x'][8][i]]], axis=0)
-    Y = np.append(Y, [[data['y'][8][i]]], axis=0)
+print(x.max())
+print(x.min())
+print(y.max())
+print(y.min())
 
-A = np.hstack([X**2, X * Y, Y**2, X, Y])
-b = np.ones_like(X)
-x = np.linalg.lstsq(A, b)[0].squeeze()
+N = len(x)
 
-print(x)
+print(N)
 
+xmean, ymean = x.mean(), y.mean()
+x -= xmean
+y -= ymean
+U, S, V = np.linalg.svd(np.stack((x, y)))
+
+tt = np.linspace(0, 2*np.pi, 1000)
+circle = np.stack((np.cos(tt), np.sin(tt)))    # unit circle
+transform = np.sqrt(2/N) * U.dot(np.diag(S))   # transformation matrix
+fit = transform.dot(circle) + np.array([[xmean], [ymean]])
+plt.plot(fit[0, :], fit[1, :], 'r')
 
 
 for i in range(len(data)):
     plt.scatter(data['x'][i], data['y'][i], color=data['color'][i], s=0.5)
 
-
-print(X.max())
-print(X.min())
-print(Y.max())
-print(Y.min())
-
-
-
-x_coord = np.linspace(X.min()+(X.min()/10), X.max()+(X.max()/10), 300)
-y_coord = np.linspace(Y.min()+(Y.min()/10), Y.max()+(Y.max()/10), 300)
-X_coord, Y_coord = np.meshgrid(x_coord, y_coord)
-Z_coord = x[0] * X_coord ** 2 + x[1] * X_coord * Y_coord + x[2] * Y_coord**2 + x[3] * X_coord + x[4] * Y_coord
-print(Z_coord)
-plt.contour(X_coord, Y_coord, Z_coord, levels=[1], colors=('r'), linewidths=2)
 
 plt.show()
