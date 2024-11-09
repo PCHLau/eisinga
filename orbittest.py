@@ -25,19 +25,28 @@ for i in range(1,100):
 
 planets = load('de440.bsp')
 
-objects = ['sun', 'earth'
-           , 'moon', 'mercury', 'venus', 'mars'
-        #  , 'jupiter', 'saturn'
-           ,'uranus', 'neptune', 'pluto'
+objects = [{'name': 'sun', 'orbper': None}
+            ,{'name': 'earth', 'orbper': 365.256363004}
+            ,{'name': 'moon', 'orbper': 365.256363004}
+            ,{'name': 'mercury', 'orbper': 87.9691}
+            ,{'name': 'venus', 'orbper':224.701}
+            ,{'name': 'mars', 'orbper': 686.980}
+            # ,{'name': 'jupiter', 'orbper': 4332.59}
+            # ,{'name': 'saturn', 'orbper': 10755.70}
+            # ,{'name': 'uranus', 'orbper': 30688.5}
+            # ,{'name': 'neptune', 'orbper': 60195}
+            # ,{'name': 'pluto', 'orbper': 90560}
            ]
 
 new_data = []
 
+fig = plt.figure()
+
 for i, el in enumerate(objects):
-    if el in ['sun', 'earth', 'moon']:
-        obj = planets[objects[i]]
+    if el['name'] in ['sun', 'earth', 'moon']:
+        obj = planets[el['name']]
     else:
-        obj = planets[f'{objects[i]} barycenter']
+        obj = planets[f'{el['name']} barycenter']
 
     colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
 
@@ -63,45 +72,30 @@ for i, el in enumerate(objects):
         y.append(loc[k][1])
         z.append(loc[k][2])
 
-    new_data.append({'name': objects[i], 'x': x, 'y': y, 'z': z, 'color': color})
+    el['x'] = x
+    el['y'] = y
+    el['z'] = z
+    el['color'] = color
 
-fig = plt.figure()
+    X = np.array([[x[0]]])
+    Y = np.array([[y[0]]])
 
-data = pd.DataFrame(new_data)
+    for j,b in enumerate(x):
+        if j == 0:
+            continue
+        X = np.append(X, [[x[j]]], axis=0)
+        Y = np.append(Y, [[y[j]]], axis=0)
 
-X = np.array([[data['x'][8][0]]])
-Y = np.array([[data['y'][8][0]]])
+    A = np.hstack([X**2, X * Y, Y**2, X, Y])
+    b = np.ones_like(X)
+    xx = np.linalg.lstsq(A, b)[0].squeeze()
 
-for i, a in enumerate(data['x'][1]):
-    if i == 0:
-        continue
-    X = np.append(X, [[data['x'][8][i]]], axis=0)
-    Y = np.append(Y, [[data['y'][8][i]]], axis=0)
+    plt.scatter(x, y, color=color, s=0.5)
 
-A = np.hstack([X**2, X * Y, Y**2, X, Y])
-b = np.ones_like(X)
-x = np.linalg.lstsq(A, b)[0].squeeze()
-
-print(x)
-
-
-
-for i in range(len(data)):
-    plt.scatter(data['x'][i], data['y'][i], color=data['color'][i], s=0.5)
-
-
-print(X.max())
-print(X.min())
-print(Y.max())
-print(Y.min())
-
-
-
-x_coord = np.linspace(X.min()+(X.min()/10), X.max()+(X.max()/10), 300)
-y_coord = np.linspace(Y.min()+(Y.min()/10), Y.max()+(Y.max()/10), 300)
-X_coord, Y_coord = np.meshgrid(x_coord, y_coord)
-Z_coord = x[0] * X_coord ** 2 + x[1] * X_coord * Y_coord + x[2] * Y_coord**2 + x[3] * X_coord + x[4] * Y_coord
-print(Z_coord)
-plt.contour(X_coord, Y_coord, Z_coord, levels=[1], colors=('r'), linewidths=2)
+    x_coord = np.linspace(X.min()+(X.min()/10), X.max()+(X.max()/10), 300)
+    y_coord = np.linspace(Y.min()+(Y.min()/10), Y.max()+(Y.max()/10), 300)
+    X_coord, Y_coord = np.meshgrid(x_coord, y_coord)
+    Z_coord = xx[0] * X_coord ** 2 + xx[1] * X_coord * Y_coord + xx[2] * Y_coord**2 + xx[3] * X_coord + xx[4] * Y_coord
+    plt.contour(X_coord, Y_coord, Z_coord, levels=[1], colors=(color), linewidths=2)
 
 plt.show()
