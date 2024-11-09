@@ -13,7 +13,7 @@ import datetime
 import math
 
 ts = load.timescale()
-t = ts.now()
+now = ts.now()
 
 time=[]
 
@@ -31,8 +31,8 @@ objects = [{'name': 'sun', 'orbper': None}
             ,{'name': 'mercury', 'orbper': 87.9691}
             ,{'name': 'venus', 'orbper':224.701}
             ,{'name': 'mars', 'orbper': 686.980}
-            # ,{'name': 'jupiter', 'orbper': 4332.59}
-            # ,{'name': 'saturn', 'orbper': 10755.70}
+            ,{'name': 'jupiter', 'orbper': 4332.59}
+            ,{'name': 'saturn', 'orbper': 10755.70}
             # ,{'name': 'uranus', 'orbper': 30688.5}
             # ,{'name': 'neptune', 'orbper': 60195}
             # ,{'name': 'pluto', 'orbper': 90560}
@@ -42,13 +42,19 @@ new_data = []
 
 fig = plt.figure()
 
+x_max = 0
+y_max = 0
+x_min = 0
+y_min = 0
+
 for i, el in enumerate(objects):
     if el['name'] in ['sun', 'earth', 'moon']:
         obj = planets[el['name']]
     else:
         obj = planets[f'{el['name']} barycenter']
 
-    colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
+
+    colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
 
     color = colors[i%len(colors)]
 
@@ -90,12 +96,30 @@ for i, el in enumerate(objects):
     b = np.ones_like(X)
     xx = np.linalg.lstsq(A, b)[0].squeeze()
 
-    plt.scatter(x, y, color=color, s=0.5)
+    # plt.scatter(x, y, color=color, s=0.5)
 
-    x_coord = np.linspace(X.min()+(X.min()/10), X.max()+(X.max()/10), 300)
-    y_coord = np.linspace(Y.min()+(Y.min()/10), Y.max()+(Y.max()/10), 300)
+    x_min = X.min()+X.min()/10
+    x_max = X.max()+X.max()/10
+    y_min = Y.min()+Y.min()/10
+    y_max = Y.max()+Y.max()/10
+
+    x_coord = np.linspace(x_min, x_max, 300)
+    y_coord = np.linspace(y_min, y_max, 300)
     X_coord, Y_coord = np.meshgrid(x_coord, y_coord)
     Z_coord = xx[0] * X_coord ** 2 + xx[1] * X_coord * Y_coord + xx[2] * Y_coord**2 + xx[3] * X_coord + xx[4] * Y_coord
     plt.contour(X_coord, Y_coord, Z_coord, levels=[1], colors=(color), linewidths=2)
+
+    loc_now = obj.at(now).position.km
+    rot = fb.ecliptic_frame.rotation_at(now)
+    r = R.from_matrix(rot)
+    loc_now = r.apply(loc_now)
+    plt.scatter(loc_now[0], loc_now[1], color=color, s=100)
+
+    el['posnow'] = loc_now
+
+plt.xlim(x_min, x_max)
+plt.ylim(y_min, y_max)
+
+data = pd.DataFrame(objects)
 
 plt.show()
