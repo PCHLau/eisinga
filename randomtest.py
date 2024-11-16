@@ -1,53 +1,143 @@
-import numpy as np
+from skyfield.api import load
+from skyfield.api import utc
+import skyfield.framelib as fb
 import matplotlib.pyplot as plt
-alpha = 5
-beta = 3
-N = 500
-DIM = 2
+from mpl_toolkits import mplot3d
+from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
+import pandas as pd
+from scipy.spatial.transform import Rotation as R
+import scipy.optimize
+import functools
+import datetime
+import math
 
-np.random.seed(2)
+ts = load.timescale()
+now = ts.now()
 
-# Generate random points on the unit circle by sampling uniform angles
-theta = np.random.uniform(0, 2*np.pi, (N,1))
-eps_noise = 0.2 * np.random.normal(size=[N,1])
-circle = np.hstack([np.cos(theta), np.sin(theta)])
+# time=[]
 
-# Stretch and rotate circle to an ellipse with random linear tranformation
-B = np.random.randint(-3, 3, (DIM, DIM))
-noisy_ellipse = circle.dot(B) + eps_noise
+period  = 10
 
-# Extract x coords and y coords of the ellipse as column vectors
-X = noisy_ellipse[:,0:1]
-Y = noisy_ellipse[:,1:]
+today = datetime.datetime(2024, 1, 1, tzinfo=utc)
 
-print(type(X))
-print(X.shape)
+# for i in range(1,100):
+#     time.append(ts.from_datetime(today))
+#     today += datetime.timedelta(days=1000)
 
-# Formulate and solve the least squares problem ||Ax - b ||^2
-A = np.hstack([X**2, X * Y, Y**2, X, Y])
-b = np.ones_like(X)
-x = np.linalg.lstsq(A, b)[0].squeeze()
+planets = load('de440.bsp')
 
-# # Print the equation of the ellipse in standard form
-# print('The ellipse is given by {0:.3}x^2 + {1:.3}xy+{2:.3}y^2+{3:.3}x+{4:.3}y = 1'.format(x[0], x[1],x[2],x[3],x[4]))
+objects = [{'name': 'sun', 'orbper': 365.256363004}
+            ,{'name': 'earth', 'orbper': 365.256363004}
+            # ,{'name': 'moon', 'orbper': 365.256363004}
+            ,{'name': 'mercury', 'orbper': 87.9691}
+            ,{'name': 'venus', 'orbper':224.701}
+            ,{'name': 'mars', 'orbper': 686.980}
+            # ,{'name': 'jupiter', 'orbper': 4332.59}
+            # ,{'name': 'saturn', 'orbper': 10755.70}
+            # ,{'name': 'uranus', 'orbper': 30688.5}
+            # ,{'name': 'neptune', 'orbper': 60195}
+            # ,{'name': 'pluto', 'orbper': 90560}
+           ]
 
-# # Plot the noisy data
-# plt.scatter(X, Y, label='Data Points')
+new_data = []
 
-# # Plot the original ellipse from which the data was generated
-# phi = np.linspace(0, 2*np.pi, 1000).reshape((1000,1))
-# c = np.hstack([np.cos(phi), np.sin(phi)])
-# ground_truth_ellipse = c.dot(B)
-# plt.plot(ground_truth_ellipse[:,0], ground_truth_ellipse[:,1], 'k--', label='Generating Ellipse')
+fig = plt.figure()
+ax = fig.add_subplot()
 
-# Plot the least squares ellipse
-x_coord = np.linspace(-10,10,300)
-y_coord = np.linspace(-5,5,300)
-X_coord, Y_coord = np.meshgrid(x_coord, y_coord)
-Z_coord = x[0] * X_coord ** 2 + x[1] * X_coord * Y_coord + x[2] * Y_coord**2 + x[3] * X_coord + x[4] * Y_coord
-plt.contour(X_coord, Y_coord, Z_coord, levels=[1], colors=('r'), linewidths=2)
+x_max = 0
+y_max = 0
+x_min = 0
+y_min = 0
 
-plt.legend()
-plt.xlabel('X')
-plt.ylabel('Y')
+time = []
+
+for i in range(1,100):
+    time.append(ts.from_datetime(today))
+    today += datetime.timedelta(days=period)
+
+for enu, enum in enumerate(time):
+
+    ax.clear()
+
+    for i, el in enumerate(objects):
+        if el['name'] in ['sun', 'earth', 'moon']:
+            obj = planets[el['name']]
+        else:
+            obj = planets[f'{el['name']} barycenter']
+
+
+        colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+
+        color = colors[i%len(colors)]
+
+        loc = []
+
+        orbper = el['orbper']
+
+        orbper = math.ceil(orbper*1.1)
+
+        for j, t in enumerate(time):
+            location = obj.at(t).position.km
+
+            rot = fb.ecliptic_frame.rotation_at(t)
+            r = R.from_matrix(rot)
+
+            location = r.apply(location)
+            loc.append(location)
+
+        x = []
+        y = []
+        z = []
+
+        for k, a in enumerate(loc):
+            x.append(loc[k][0])
+            y.append(loc[k][1])
+            z.append(loc[k][2])
+
+        el['x'] = x
+        el['y'] = y
+        el['z'] = z
+        el['color'] = color
+
+        X = np.array([[x[0]]])
+        Y = np.array([[y[0]]])
+
+        for j,b in enumerate(x):
+            if j == 0:
+                continue
+            X = np.append(X, [[x[j]]], axis=0)
+            Y = np.append(Y, [[y[j]]], axis=0)
+
+        A = np.hstack([X**2, X * Y, Y**2, X, Y])
+        b = np.ones_like(X)
+        xx = np.linalg.lstsq(A, b)[0].squeeze()
+
+        # plt.scatter(x, y, color=color, s=0.5)
+
+        x_min = X.min()+X.min()/10
+        x_max = X.max()+X.max()/10
+        y_min = Y.min()+Y.min()/10
+        y_max = Y.max()+Y.max()/10
+
+        x_coord = np.linspace(x_min, x_max, 300)
+        y_coord = np.linspace(y_min, y_max, 300)
+        X_coord, Y_coord = np.meshgrid(x_coord, y_coord)
+        Z_coord = xx[0] * X_coord ** 2 + xx[1] * X_coord * Y_coord + xx[2] * Y_coord**2 + xx[3] * X_coord + xx[4] * Y_coord
+        ax.contour(X_coord, Y_coord, Z_coord, levels=[1], colors=(color), linewidths=2)
+
+        loc_now = obj.at(enum).position.km
+        rot = fb.ecliptic_frame.rotation_at(enum)
+        r = R.from_matrix(rot)
+        loc_now = r.apply(loc_now)
+        ax.scatter(loc_now[0], loc_now[1], color=color, s=100)
+
+        el['posnow'] = loc_now
+
+    plt.xlim(x_min, x_max)
+    plt.ylim(y_min, y_max)
+    plt.pause(0.001)
+
+data = pd.DataFrame(objects)
+
 plt.show()
