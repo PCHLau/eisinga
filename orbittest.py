@@ -15,17 +15,19 @@ import math
 ts = load.timescale()
 now = ts.now()
 
-time=[]
+# time=[]
+
+period  = 10
 
 today = datetime.datetime(2024, 1, 1, tzinfo=utc)
 
-for i in range(1,100):
-    time.append(ts.from_datetime(today))
-    today += datetime.timedelta(days=1000)
+# for i in range(1,100):
+#     time.append(ts.from_datetime(today))
+#     today += datetime.timedelta(days=1000)
 
 planets = load('de440.bsp')
 
-objects = [{'name': 'sun', 'orbper': None}
+objects = [{'name': 'sun', 'orbper': 365.256363004}
             ,{'name': 'earth', 'orbper': 365.256363004}
             ,{'name': 'moon', 'orbper': 365.256363004}
             ,{'name': 'mercury', 'orbper': 87.9691}
@@ -59,6 +61,17 @@ for i, el in enumerate(objects):
     color = colors[i%len(colors)]
 
     loc = []
+
+    time = []
+
+    orbper = el['orbper']
+
+    orbper = math.ceil(orbper*1.1)
+
+    for i in range(1, orbper//period):
+        time.append(ts.from_datetime(today))
+        today += datetime.timedelta(days=period)
+
 
     for j, t in enumerate(time):
         location = obj.at(t).position.km
