@@ -18,7 +18,7 @@ now = ts.now()
 
 # time=[]
 
-period  = 10
+period  = 100
 
 today = datetime.datetime(2024, 1, 1, tzinfo=utc)
 
@@ -28,17 +28,18 @@ today = datetime.datetime(2024, 1, 1, tzinfo=utc)
 
 planets = load('de440.bsp')
 
-objects = [{'name': 'sun', 'orbper': 365.256363004}
+objects = [
+            {'name': 'sun', 'orbper': 365.256363004}
             ,{'name': 'earth', 'orbper': 365.256363004}
-            # ,{'name': 'moon', 'orbper': 365.256363004}
+            ,{'name': 'moon', 'orbper': 365.256363004}
             ,{'name': 'mercury', 'orbper': 87.9691}
             ,{'name': 'venus', 'orbper':224.701}
             ,{'name': 'mars', 'orbper': 686.980}
-            # ,{'name': 'jupiter', 'orbper': 4332.59}
-            # ,{'name': 'saturn', 'orbper': 10755.70}
-            # ,{'name': 'uranus', 'orbper': 30688.5}
-            # ,{'name': 'neptune', 'orbper': 60195}
-            # ,{'name': 'pluto', 'orbper': 90560}
+            ,{'name': 'jupiter', 'orbper': 4332.59}
+            ,{'name': 'saturn', 'orbper': 10755.70}
+            ,{'name': 'uranus', 'orbper': 30688.5}
+            ,{'name': 'neptune', 'orbper': 60195}
+            ,{'name': 'pluto', 'orbper': 90560}
            ]
 
 new_data = []
@@ -82,9 +83,10 @@ for i, el in enumerate(objects):
         pass
         
 
-    loops = orbper//period
+    loops = math.ceil(orbper/period)
 
     delta = time_copy[-1] - time_copy[0]
+
 
     if delta < orbper:
         for timedelta in range(1, int((orbper-delta)//period)):
@@ -94,6 +96,7 @@ for i, el in enumerate(objects):
         orbit_time = time_copy
     else:
         orbit_time = time_copy[:loops]
+
 
     for j, t in enumerate(orbit_time):
         location = obj.at(t).position.km
@@ -118,6 +121,7 @@ for i, el in enumerate(objects):
     el['z'] = z
     el['color'] = color
 
+    print(x)
     X = np.array([[x[0]]])
     Y = np.array([[y[0]]])
 
