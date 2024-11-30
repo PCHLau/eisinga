@@ -121,7 +121,6 @@ for i, el in enumerate(objects):
     el['z'] = z
     el['color'] = color
 
-    print(x)
     X = np.array([[x[0]]])
     Y = np.array([[y[0]]])
 

@@ -135,4 +135,6 @@ plt.ylim(y_min, y_max)
 
 data = pd.DataFrame(objects)
 
+plt.savefig('static/orbittest.png')
+
 plt.show()
