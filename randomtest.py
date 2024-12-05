@@ -157,6 +157,8 @@ for i, el in enumerate(objects):
 
 plt.xlim(x_minmin, x_maxmax)
 plt.ylim(y_minmin, y_maxmax)
+plt.axis('off')
+plt.gca().set_aspect('equal', adjustable='box')
 
 for enu, enum in enumerate(time):
     if enu == 0:

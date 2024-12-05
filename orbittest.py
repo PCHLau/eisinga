@@ -56,7 +56,9 @@ for i, el in enumerate(objects):
         obj = planets[f'{el['name']} barycenter']
 
 
-    colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+    colors = ['b', 'g', 'r', 'c', 'm', 'y'
+            #   , 'k'
+              , 'w']
 
     color = colors[i%len(colors)]
 
@@ -132,9 +134,14 @@ for i, el in enumerate(objects):
 
 plt.xlim(x_min, x_max)
 plt.ylim(y_min, y_max)
+plt.axis('off')
+plt.gca().set_aspect('equal', adjustable='box')
+figure = plt.gcf()
+figure.set_size_inches(10, 10)
+
 
 data = pd.DataFrame(objects)
 
-plt.savefig('static/orbittest.png')
+plt.savefig('static/orbittest.png', dpi=1000, bbox_inches='tight', pad_inches=0, facecolor='k')
 
 plt.show()
