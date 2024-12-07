@@ -132,8 +132,9 @@ def plotter():
         r = R.from_matrix(rot)
         loc_now = r.apply(loc_now)
         plt.scatter(loc_now[0], loc_now[1], color=color, s=0.0001)
-        ab=AnnotationBbox(getImage(f'static/{el['name']}.png', zoom=0.02), (loc_now[0], loc_now[1]), frameon=False)
-        plt.gca().add_artist(ab)
+        if el['name'] != 'moon':
+            ab=AnnotationBbox(getImage(f'static/{el['name']}.png', zoom=0.02), (loc_now[0], loc_now[1]), frameon=False)
+            plt.gca().add_artist(ab)
 
         el['posnow'] = loc_now
 
